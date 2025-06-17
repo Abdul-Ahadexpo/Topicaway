@@ -2,14 +2,14 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDhcl5-axgP59PvrhOqc1azBaDwO_VsHjQ",
-  authDomain: "lateexam-prep.firebaseapp.com",
-  databaseURL: "https://lateexam-prep-default-rtdb.firebaseio.com",
-  projectId: "lateexam-prep",
-  storageBucket: "lateexam-prep.firebasestorage.app",
-  messagingSenderId: "814062210217",
-  appId: "1:814062210217:web:a1baa14ae8dc6b93a16db8"
+  apiKey: "AIzaSyC0XSOa4mwAyTQkFn8ade_oRckRxQjN-Xc",
+  authDomain: "topicaway.firebaseapp.com",
+  projectId: "topicaway",
+  storageBucket: "topicaway.firebasestorage.app",
+  messagingSenderId: "195296186273",
+  appId: "1:195296186273:web:d4037cae9f69dcb50ec5e0"
 };
+
 
 const app = initializeApp(firebaseConfig);
 export const database = getDatabase(app);
