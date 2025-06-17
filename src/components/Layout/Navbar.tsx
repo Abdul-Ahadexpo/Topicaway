@@ -26,7 +26,7 @@ const Navbar: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 text-xl font-bold text-blue-600">
             <Gift className="h-6 w-6" />
-            <span>Giveaway Hub</span>
+            <span>Topicaway</span>
           </Link>
 
           {/* Desktop Menu */}

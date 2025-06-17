@@ -12,7 +12,8 @@ export interface GiveawayEntry {
   id: string;
   giveawayId: string;
   name: string;
-  locationNumber: number;
+  location: string;
+  phoneNumber: string;
   email: string;
   submittedAt: string;
 }

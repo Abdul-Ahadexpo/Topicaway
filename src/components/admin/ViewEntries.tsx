@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Mail, MapPin, Calendar, Search, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Mail, MapPin, Calendar, Search, Trash2, AlertTriangle, Phone } from 'lucide-react';
 import { Giveaway, GiveawayEntry } from '../../types';
 import { deleteGiveawayEntry } from '../../services/firebase';
 
@@ -59,6 +59,8 @@ const ViewEntries: React.FC<ViewEntriesProps> = ({ giveaways, allEntries, onEntr
       entries = entries.filter(entry =>
         entry.name.toLowerCase().includes(term) ||
         entry.email.toLowerCase().includes(term) ||
+        entry.location.toLowerCase().includes(term) ||
+        entry.phoneNumber.toLowerCase().includes(term) ||
         (entry.giveawayTitle && entry.giveawayTitle.toLowerCase().includes(term))
       );
     }
@@ -123,7 +125,7 @@ const ViewEntries: React.FC<ViewEntriesProps> = ({ giveaways, allEntries, onEntr
                     id="search"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search by name, email, or giveaway..."
+                    placeholder="Search by name, email, location, phone..."
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -193,17 +195,25 @@ const ViewEntries: React.FC<ViewEntriesProps> = ({ giveaways, allEntries, onEntr
                               <div className="text-sm font-medium text-gray-900">{entry.name}</div>
                               <div className="text-sm text-gray-500 flex items-center">
                                 <MapPin className="h-3 w-3 mr-1" />
-                                Location: {entry.locationNumber}
+                                {entry.location}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Mail className="h-4 w-4 mr-2" />
-                            <a href={`mailto:${entry.email}`} className="hover:text-blue-600">
-                              {entry.email}
-                            </a>
+                          <div className="space-y-1">
+                            <div className="flex items-center text-sm text-gray-500">
+                              <Mail className="h-4 w-4 mr-2" />
+                              <a href={`mailto:${entry.email}`} className="hover:text-blue-600">
+                                {entry.email}
+                              </a>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-500">
+                              <Phone className="h-4 w-4 mr-2" />
+                              <a href={`tel:${entry.phoneNumber}`} className="hover:text-blue-600">
+                                {entry.phoneNumber}
+                              </a>
+                            </div>
                           </div>
                         </td>
                         {selectedGiveaway === 'all' && (

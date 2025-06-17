@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Shield } from 'lucide-react';
+import { ArrowLeft, Send, Shield, MapPin, Phone } from 'lucide-react';
 import { getGiveaway, createGiveawayEntry, getGiveawayEntries } from '../services/firebase';
 import { Giveaway } from '../types';
 
@@ -13,7 +13,8 @@ const GiveawayForm: React.FC = () => {
   const [entryCount, setEntryCount] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
-    locationNumber: '',
+    location: '',
+    phoneNumber: '',
     email: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -65,10 +66,16 @@ const GiveawayForm: React.FC = () => {
       newErrors.name = 'Name must be at least 2 characters';
     }
 
-    if (!formData.locationNumber) {
-      newErrors.locationNumber = 'Location number is required';
-    } else if (parseInt(formData.locationNumber) < 1) {
-      newErrors.locationNumber = 'Location number must be positive';
+    if (!formData.location.trim()) {
+      newErrors.location = 'Location is required';
+    } else if (formData.location.trim().length < 2) {
+      newErrors.location = 'Location must be at least 2 characters';
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^\+?[\d\s\-\(\)]{7,15}$/.test(formData.phoneNumber.trim())) {
+      newErrors.phoneNumber = 'Please enter a valid phone number';
     }
 
     if (!formData.email.trim()) {
@@ -92,7 +99,8 @@ const GiveawayForm: React.FC = () => {
       await createGiveawayEntry({
         giveawayId: id,
         name: formData.name.trim(),
-        locationNumber: parseInt(formData.locationNumber),
+        location: formData.location.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
         email: formData.email.trim(),
         submittedAt: new Date().toISOString()
       });
@@ -188,23 +196,42 @@ const GiveawayForm: React.FC = () => {
                 {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
               </div>
 
-              {/* Location Number Field */}
+              {/* Location Field */}
               <div>
-                <label htmlFor="locationNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                  Location Number *
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="h-4 w-4 inline mr-1" />
+                  Location *
                 </label>
                 <input
-                  type="number"
-                  id="locationNumber"
-                  value={formData.locationNumber}
-                  onChange={(e) => handleInputChange('locationNumber', e.target.value)}
+                  type="text"
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                    errors.locationNumber ? 'border-red-500' : 'border-gray-300'
+                    errors.location ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Enter your location number"
-                  min="1"
+                  placeholder="Enter your location (city, area, etc.)"
                 />
-                {errors.locationNumber && <p className="mt-1 text-sm text-red-600">{errors.locationNumber}</p>}
+                {errors.location && <p className="mt-1 text-sm text-red-600">{errors.location}</p>}
+              </div>
+
+              {/* Phone Number Field */}
+              <div>
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="h-4 w-4 inline mr-1" />
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your phone number"
+                />
+                {errors.phoneNumber && <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>}
               </div>
 
               {/* Email Field */}
