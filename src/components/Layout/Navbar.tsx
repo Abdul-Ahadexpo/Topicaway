@@ -41,7 +41,7 @@ const Navbar: React.FC = () => {
               >
                 <Gift className="h-6 w-6" />
               </motion.div>
-              <span>Topicaway</span>
+              <span>Aniaway</span>
             </Link>
           </motion.div>
 

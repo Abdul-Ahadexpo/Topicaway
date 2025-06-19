@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
 /* Custom animations */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -25,7 +32,6 @@ html {
 
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
-  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -35,6 +41,21 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Dark mode scrollbar */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: #374151;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #6b7280;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
 }
 
 /* Line clamp utilities */
@@ -63,6 +84,18 @@ html {
   }
 }
 
+@media (prefers-color-scheme: dark) {
+  @supports not (backdrop-filter: blur(10px)) {
+    .backdrop-blur-sm {
+      background-color: rgba(31, 41, 55, 0.9);
+    }
+    
+    .backdrop-blur-md {
+      background-color: rgba(31, 41, 55, 0.95);
+    }
+  }
+}
+
 /* Focus styles */
 .focus-visible:focus {
   outline: 2px solid #3B82F6;
@@ -83,4 +116,12 @@ html {
 
 .pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Dark mode base styles */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #111827;
+    color: #f9fafb;
+  }
 }

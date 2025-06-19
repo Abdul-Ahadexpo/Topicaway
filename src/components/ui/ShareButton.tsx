@@ -20,7 +20,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ giveawayId, title, className 
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `Join ${title} - Topicaway`,
+          title: `Join ${title} - Aniaway`,
           text: `Check out this amazing giveaway: ${title}`,
           url: shareUrl,
         });

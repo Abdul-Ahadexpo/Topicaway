@@ -16,6 +16,7 @@ export interface GiveawayEntry {
   phoneNumber: string;
   email: string;
   submittedAt: string;
+  ipAddress: string;
 }
 
 export interface Winner {
@@ -24,4 +25,12 @@ export interface Winner {
   giveawayTitle: string;
   dateWon: string;
   imageUrl: string;
+}
+
+export interface IPRestriction {
+  id: string;
+  ipAddress: string;
+  giveawayId: string;
+  lastEntryDate: string;
+  isBlocked: boolean;
 }

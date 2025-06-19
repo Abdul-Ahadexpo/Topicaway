@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Shield, MapPin, Phone } from 'lucide-react';
+import { ArrowLeft, Send, Shield, MapPin, Phone, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getGiveaway, createGiveawayEntry, getGiveawayEntries } from '../services/firebase';
+import { getGiveaway, createGiveawayEntry, getGiveawayEntries, getUserIP, canUserEnterGiveaway } from '../services/firebase';
 import { Giveaway } from '../types';
 import { useConfetti } from '../hooks/useConfetti';
 import AnimatedBackground from '../components/ui/AnimatedBackground';
@@ -16,6 +16,8 @@ const GiveawayForm: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [entryCount, setEntryCount] = useState(0);
+  const [userIP, setUserIP] = useState<string>('');
+  const [eligibilityCheck, setEligibilityCheck] = useState<{ canEnter: boolean; reason?: string } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     location: '',
@@ -32,6 +34,10 @@ const GiveawayForm: React.FC = () => {
       }
 
       try {
+        // Get user's IP address
+        const ip = await getUserIP();
+        setUserIP(ip);
+
         const giveawayData = await getGiveaway(id);
         if (!giveawayData) {
           navigate('/');
@@ -51,6 +57,11 @@ const GiveawayForm: React.FC = () => {
           navigate('/');
           return;
         }
+
+        // Check user eligibility
+        const eligibility = await canUserEnterGiveaway(id, ip);
+        setEligibilityCheck(eligibility);
+
       } catch (error) {
         console.error('Error fetching giveaway:', error);
         navigate('/');
@@ -96,7 +107,7 @@ const GiveawayForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || !giveaway || !id) return;
+    if (!validateForm() || !giveaway || !id || !eligibilityCheck?.canEnter) return;
 
     setSubmitting(true);
     
@@ -107,7 +118,8 @@ const GiveawayForm: React.FC = () => {
         location: formData.location.trim(),
         phoneNumber: formData.phoneNumber.trim(),
         email: formData.email.trim(),
-        submittedAt: new Date().toISOString()
+        submittedAt: new Date().toISOString(),
+        ipAddress: userIP
       });
 
       // Trigger confetti animation
@@ -135,10 +147,10 @@ const GiveawayForm: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <AnimatedBackground />
         <motion.div 
-          className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"
+          className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 dark:border-blue-400"
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
@@ -147,19 +159,19 @@ const GiveawayForm: React.FC = () => {
     );
   }
 
-  if (!giveaway) {
+  if (!giveaway || !eligibilityCheck) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <AnimatedBackground />
         <motion.div 
           className="text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-2xl font-semibold text-gray-700 mb-2">Giveaway Not Found</h2>
+          <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Giveaway Not Found</h2>
           <button 
             onClick={() => navigate('/')}
-            className="text-blue-600 hover:text-blue-800 transition-colors"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
           >
             Return to Home
           </button>
@@ -168,14 +180,93 @@ const GiveawayForm: React.FC = () => {
     );
   }
 
+  // Show eligibility error if user cannot enter
+  if (!eligibilityCheck.canEnter) {
+    return (
+      <div className="min-h-screen py-8 relative bg-white dark:bg-gray-900">
+        <AnimatedBackground />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.button
+            onClick={() => navigate('/')}
+            className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mb-6 transition-colors"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileHover={{ x: -5 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Back to Giveaways
+          </motion.button>
+
+          <motion.div 
+            className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 px-6 sm:px-8 py-8 text-white">
+              <motion.h1 
+                className="text-2xl sm:text-3xl font-bold mb-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                Entry Restricted
+              </motion.h1>
+              <motion.p 
+                className="text-red-100"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                {giveaway.title}
+              </motion.p>
+            </div>
+
+            <div className="px-6 sm:px-8 py-8">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+                <div className="flex items-start">
+                  <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">Cannot Enter Giveaway</h3>
+                    <p className="text-red-700 dark:text-red-300 mb-4">
+                      {eligibilityCheck.reason}
+                    </p>
+                    <div className="text-sm text-red-600 dark:text-red-400">
+                      <p className="mb-2"><strong>Entry Rules:</strong></p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>You can only enter each giveaway once</li>
+                        <li>You must wait 4 days between entering different giveaways</li>
+                        <li>These restrictions help ensure fair participation for everyone</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => navigate('/')}
+                  className="bg-gradient-to-r from-blue-600 to-teal-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-teal-700 transition-all duration-200"
+                >
+                  View Other Giveaways
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen py-8 relative">
+    <div className="min-h-screen py-8 relative bg-white dark:bg-gray-900">
       <AnimatedBackground />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Back Button */}
         <motion.button
           onClick={() => navigate('/')}
-          className="flex items-center text-blue-600 hover:text-blue-800 mb-6 transition-colors"
+          className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mb-6 transition-colors"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           whileHover={{ x: -5 }}
@@ -187,7 +278,7 @@ const GiveawayForm: React.FC = () => {
 
         {/* Form Card */}
         <motion.div 
-          className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden"
+          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -241,7 +332,7 @@ const GiveawayForm: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Full Name *
                 </label>
                 <input
@@ -249,14 +340,14 @@ const GiveawayForm: React.FC = () => {
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                    errors.name ? 'border-red-500 shake' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.name ? 'border-red-500 shake' : 'border-gray-300 dark:border-gray-600'
                   }`}
                   placeholder="Enter your full name"
                 />
                 {errors.name && (
                   <motion.p 
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-sm text-red-600 dark:text-red-400"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
@@ -271,7 +362,7 @@ const GiveawayForm: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <MapPin className="h-4 w-4 inline mr-1" />
                   Location *
                 </label>
@@ -280,14 +371,14 @@ const GiveawayForm: React.FC = () => {
                   id="location"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                    errors.location ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.location ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
                   placeholder="Enter your location (city, area, etc.)"
                 />
                 {errors.location && (
                   <motion.p 
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-sm text-red-600 dark:text-red-400"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
@@ -302,7 +393,7 @@ const GiveawayForm: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Phone className="h-4 w-4 inline mr-1" />
                   Phone Number *
                 </label>
@@ -311,14 +402,14 @@ const GiveawayForm: React.FC = () => {
                   id="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                    errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.phoneNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
                   placeholder="Enter your phone number"
                 />
                 {errors.phoneNumber && (
                   <motion.p 
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-sm text-red-600 dark:text-red-400"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
@@ -333,7 +424,7 @@ const GiveawayForm: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email Address *
                 </label>
                 <input
@@ -341,14 +432,14 @@ const GiveawayForm: React.FC = () => {
                   id="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
                   placeholder="Enter your email address"
                 />
                 {errors.email && (
                   <motion.p 
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-sm text-red-600 dark:text-red-400"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
@@ -359,16 +450,16 @@ const GiveawayForm: React.FC = () => {
 
               {/* Privacy Notice */}
               <motion.div 
-                className="bg-blue-50 border border-blue-200 rounded-lg p-4"
+                className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
               >
                 <div className="flex items-start">
-                  <Shield className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
                   <div>
-                    <h3 className="text-sm font-medium text-blue-800 mb-1">Privacy Notice</h3>
-                    <p className="text-sm text-blue-700">
+                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">Privacy Notice</h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
                       We value your privacy. This information is only used to send you the giveaway prize and is not shared or used for any other purpose.
                     </p>
                   </div>
